@@ -622,10 +622,7 @@ static pid_t _findProcessIdentifierBehindSocket(dispatch_fd_t fd)
         self.channel = nil;
     }
 
-    if (self.fd != kInvalidPid) {
-        close(self.fd);
-        self.fd = kInvalidPid;
-    }
+    self.fd = kInvalidPid;
 }
 
 - (void)_sendMessageOnSerialQueue:(LLBSDMessage *)message completion:(void (^)(NSError *error))completion
@@ -656,7 +653,10 @@ static pid_t _findProcessIdentifierBehindSocket(dispatch_fd_t fd)
 
 - (void)_setupChannel
 {
-    dispatch_io_t channel = dispatch_io_create(DISPATCH_IO_STREAM, self.fd, self.queue, ^ (__unused int error) {});
+    __block dispatch_fd_t fd = self.fd;
+    dispatch_io_t channel = dispatch_io_create(DISPATCH_IO_STREAM, fd, self.queue, ^ (__unused int error) {
+        close(fd);
+    });
     dispatch_io_set_low_water(channel, 1);
     dispatch_io_set_high_water(channel, SIZE_MAX);
     self.channel = channel;
