@@ -54,7 +54,7 @@ static NSString *_LLBSDConnectionValidObservationContext = @"_LLBSDConnectionVal
     _fd = kInvalidPid;
     _socketPath = _createSocketPath(applicationGroupIdentifier, connectionIdentifier);
     _queue = dispatch_queue_create("com.ddeville.llbsdmessaging.serial-queue", DISPATCH_QUEUE_SERIAL);
-    _processInfo = [[LLBSDProcessInfo alloc] initWithProcessName:[[NSProcessInfo processInfo] processName] processIdentifier:[[NSProcessInfo processInfo] processIdentifier]];
+    _processInfo = [[LLBSDProcessInfo alloc] initWithProcessIdentifier:[[NSProcessInfo processInfo] processIdentifier]];
 
     [self addObserver:self forKeyPath:@"valid" options:(NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew) context:&_LLBSDConnectionValidObservationContext];
 
@@ -426,57 +426,15 @@ static pid_t _findProcessIdentifierBehindSocket(dispatch_fd_t fd)
     return pid;
 }
 
-static NSString *_findProcessNameForProcessIdentifier(pid_t pid)
-{
-    if (pid == kInvalidPid) {
-        return nil;
-    }
-
-    static const int name[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
-
-    size_t proc_list_len = 0;
-
-    // Use an empty buffer to get the length to allocate
-    int length_retrieved = sysctl((int *)name, (sizeof(name) / sizeof(*name)) - 1, NULL, &proc_list_len, NULL, 0);
-    if (length_retrieved != 0) {
-        return nil;
-    }
-
-    struct kinfo_proc *proc_list = malloc(proc_list_len);
-
-    // Retrieve the process list now that we have allocated a buffer of the correct length
-    int list_retrieved = sysctl((int *)name, (sizeof(name) / sizeof(*name)) - 1, proc_list, &proc_list_len, NULL, 0);
-    if (list_retrieved != 0) {
-        free(proc_list);
-        return nil;
-    }
-
-    char *proc_name = NULL;
-
-    for (size_t idx = 0; idx < (proc_list_len / sizeof(struct kinfo_proc)); idx++) {
-        if (proc_list[idx].kp_proc.p_pid == pid) {
-            proc_name = proc_list[idx].kp_proc.p_comm;
-            break;
-        }
-    }
-
-    NSString *processName = (proc_name ? [NSString stringWithUTF8String:proc_name] : nil);
-
-    free(proc_list);
-
-    return processName;
-}
-
 - (LLBSDProcessInfo *)_findSocketInfo:(dispatch_fd_t)fd
 {
     pid_t processIdentifier = _findProcessIdentifierBehindSocket(fd);
-    NSString *processName = _findProcessNameForProcessIdentifier(processIdentifier);
 
-    if (processIdentifier == kInvalidPid || processName == nil) {
+    if (processIdentifier == kInvalidPid) {
         return nil;
     }
 
-    return [[LLBSDProcessInfo alloc] initWithProcessName:processName processIdentifier:processIdentifier];
+    return [[LLBSDProcessInfo alloc] initWithProcessIdentifier:processIdentifier];
 }
 
 - (void)_acceptNewConnection

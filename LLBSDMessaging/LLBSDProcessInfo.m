@@ -8,19 +8,17 @@
 
 #import "LLBSDProcessInfo.h"
 
-static NSString * const kLLBSDInfoProcessNameKey = @"processName";
 static NSString * const kLLBSDInfoProcessIdentifierKey = @"processIdentifier";
 
 @implementation LLBSDProcessInfo
 
-- (instancetype)initWithProcessName:(NSString *)processName processIdentifier:(pid_t)processIdentifier
+- (instancetype)initWithProcessIdentifier:(pid_t)processIdentifier
 {
     self = [self init];
     if (self == nil) {
         return nil;
     }
 
-    _processName = [processName copy];
     _processIdentifier = processIdentifier;
 
     return self;
@@ -33,9 +31,6 @@ static NSString * const kLLBSDInfoProcessIdentifierKey = @"processIdentifier";
     if ([self class] != [object class]) {
         return NO;
     }
-    if (![self.processName isEqualToString:object.processName]) {
-        return NO;
-    }
     if (!self.processIdentifier != object.processIdentifier) {
         return NO;
     }
@@ -44,14 +39,14 @@ static NSString * const kLLBSDInfoProcessIdentifierKey = @"processIdentifier";
 
 - (NSUInteger)hash
 {
-    return (self.processName.hash ^ (NSUInteger)self.processIdentifier);
+    return (NSUInteger)self.processIdentifier;
 }
 
 #pragma mark - NSCopying
 
 - (id)copyWithZone:(__unused NSZone *)zone
 {
-    return [[[self class] alloc] initWithProcessName:self.processName processIdentifier:self.processIdentifier];
+    return [[[self class] alloc] initWithProcessIdentifier:self.processIdentifier];
 }
 
 #pragma mark - NSSecureCoding
@@ -68,7 +63,6 @@ static NSString * const kLLBSDInfoProcessIdentifierKey = @"processIdentifier";
         return nil;
     }
 
-    _processName = [decoder decodeObjectOfClass:[NSString class] forKey:kLLBSDInfoProcessNameKey];
     _processIdentifier = [[decoder decodeObjectOfClass:[NSNumber class] forKey:kLLBSDInfoProcessIdentifierKey] intValue];
 
     return self;
@@ -76,7 +70,6 @@ static NSString * const kLLBSDInfoProcessIdentifierKey = @"processIdentifier";
 
 - (void)encodeWithCoder:(NSCoder *)encoder
 {
-    [encoder encodeObject:[self processName] forKey:kLLBSDInfoProcessNameKey];
     [encoder encodeObject:@([self processIdentifier]) forKey:kLLBSDInfoProcessIdentifierKey];
 }
 
